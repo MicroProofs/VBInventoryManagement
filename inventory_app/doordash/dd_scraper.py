@@ -1,79 +1,96 @@
-__author__ = 'kwhite'
+__author__ = "kwhite"
 
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from bs4 import BeautifulSoup
-from selenium.common.exceptions import NoSuchElementException
-import pandas as pd
-import time
-from decimal import Decimal
-from math import ceil
-from datetime import date
 import datetime as dt
-import calendar
+import re
+import time
+
+from bs4 import BeautifulSoup
 from dateutil.parser import parse
 from functional import seq
-import re
+from selenium import webdriver
 
 
-def getOrdersFromDate(driver, theDate, func):
-    calendarButtonElems = driver.find_elements_by_xpath(
-        '//td[text()="'+theDate+'"]')
-    print(calendarButtonElems)
-    soupPayments = []
-    for i in range(0, len(calendarButtonElems)):
-        item = driver.find_elements_by_xpath(
-            '//td[text()="'+theDate+'"]/..//a[@href]')[i]
+def get_orders_from_date(driver, the_date, func):
+    """get orders from date
+
+    Args:
+        driver (webdriver): [description]
+        the_date (date): [description]
+        func (func): [description]
+
+    Returns:
+        [BeautifulSoup]: [description]
+    """
+    # time.sleep(10)
+    calendar_button_elems = driver.find_elements_by_xpath('//td[text()="' + the_date + '"]')
+    print(calendar_button_elems)
+    soup_payments = []
+    for i in range(0, len(calendar_button_elems)):
+        item = driver.find_elements_by_xpath('//td[text()="' + the_date + '"]/..//a[@href]')[i]
         item.click()
         time.sleep(2)
-        hourOfOrder = parse(driver.find_elements_by_xpath(
-            '//span[text()="Pickup time:"]/../span')[-1].text).hour
-        print(hourOfOrder)
-        if func(hourOfOrder):
+        hour_of_order = parse(
+            driver.find_elements_by_xpath('//span[text()="Pickup time:"]/../span')[-1].text
+        ).hour
+        print(hour_of_order)
+        if func(hour_of_order):
             content = driver.page_source
-            soupPayments = (soupPayments +
-                            [BeautifulSoup(content, features="lxml")])
+            soup_payments = soup_payments + [BeautifulSoup(content, features="lxml")]
         driver.back()
-    return soupPayments
+    return soup_payments
 
 
-def scrapeComplex(driver, dateForDay):
-    soupPayments = []
+def scrape_complex(driver, date_for_day):
+    """idk
+
+    Args:
+        driver (webdriver): [description]
+        date_for_day (date): [description]
+
+    Returns:
+        int: [description]
+    """
+    soup_payments = []
     time.sleep(2)
-    calendarDate = str(dateForDay.strftime("%-m/%-d/%Y"))
-    nextCalendarDate = str(
-        (dateForDay + dt.timedelta(1)).strftime("%-m/%-d/%Y"))
-    print(calendarDate)
-    soupPayments = soupPayments + \
-        getOrdersFromDate(driver, calendarDate, lambda x: x > 10)
-    soupPayments = soupPayments + \
-        getOrdersFromDate(driver, nextCalendarDate, lambda x: x < 3)
-    non_decimal = re.compile(r'[^\d]+')
-    final = (seq(soupPayments).reduce(lambda v, x: v+int(non_decimal.sub('',
-                                                                           x.find('span', string=" Total Payout:").findParent().findAll('span')[-1].text)), 0))
-    print(final/100)
+    calendar_date = str(date_for_day.strftime("%-m/%-d/%Y"))
+    next_calendar_date = str((date_for_day + dt.timedelta(1)).strftime("%-m/%-d/%Y"))
+    print(calendar_date)
+    soup_payments = soup_payments + get_orders_from_date(driver, calendar_date, lambda x: x > 10)
+    soup_payments = soup_payments + get_orders_from_date(
+        driver, next_calendar_date, lambda x: x < 3
+    )
+    non_decimal = re.compile(r"[^\d]+")
+    final = seq(soup_payments).reduce(
+        lambda v, x: v
+        + int(
+            non_decimal.sub(
+                "",
+                x.find("span", string=" Total Payout:").findParent().findAll("span")[-1].text,
+            )
+        ),
+        0,
+    )
+    print(final / 100)
     return final
 
 
-def myScraper():
-    dateForDay = date.today() - dt.timedelta(days=1)
+def myScraper(date_for_day):
     options = webdriver.ChromeOptions()
     # Path to your chrome profile
     options.add_argument(
-        "user-data-dir=/Users/kwhite/Library/Application Support/Google/Chrome/Default")
-    driver = webdriver.Chrome(
-        "/usr/local/lib/chromium-browser/chromedriver", options=options)
-    driver.get(
-        "https://merchant-portal.doordash.com/merchant/deliveries/list?store_id=")
+        "user-data-dir=/Users/kwhite/Library/Application Support/Google/Chrome/Default"
+    )
+    driver = webdriver.Chrome("/usr/local/lib/chromium-browser/chromedriver", options=options)
+    driver.get("")
     driver.implicitly_wait(10)
-    time.sleep(1)
+    # time.sleep(1000)
     try:
-        # x=1
-        a = scrapeComplex(driver, dateForDay)
+        mine = scrape_complex(driver, date_for_day)
     except Exception as inst:
         raise inst
     finally:
         driver.quit()
-    return a
+    return mine
 
-myScraper()
+
+# myScraper(date.today() - dt.timedelta(days=1))

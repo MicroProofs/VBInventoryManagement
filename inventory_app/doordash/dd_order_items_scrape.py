@@ -8,6 +8,7 @@ from datetime import date
 from decimal import Decimal
 from math import ceil
 
+import pandas as pd
 from bs4 import BeautifulSoup
 from dateutil.parser import parse
 from functional import seq
@@ -17,35 +18,31 @@ from selenium.webdriver.common.keys import Keys
 
 
 def getOrdersFromDate(driver, theDate, func):
-    calendarButtonElems = driver.find_elements_by_xpath('//span[text()="' + theDate + '"]')
+    # time.sleep(10)
+    calendarButtonElems = driver.find_elements_by_xpath('//td[text()="' + theDate + '"]')
     print(calendarButtonElems)
     soupPayments = []
-    for i in calendarButtonElems:
-        i.click()
+    for i in range(0, len(calendarButtonElems)):
+        item = driver.find_elements_by_xpath('//td[text()="' + theDate + '"]/..//a[@href]')[i]
+        item.click()
         time.sleep(2)
         hourOfOrder = parse(
-            driver.find_element_by_class_name(
-                "transactions-order-details-header__info-bar__received-time"
-            ).text.split(" ")[-1]
+            driver.find_elements_by_xpath('//span[text()="Pickup time:"]/../span')[-1].text
         ).hour
         print(hourOfOrder)
         if func(hourOfOrder):
             content = driver.page_source
             soupPayments = soupPayments + [BeautifulSoup(content, features="lxml")]
-        driver.find_element_by_class_name(
-            "transactions-order-details-header__info-bar__close__icon"
-        ).click()
-        time.sleep(2)
+        driver.back()
     return soupPayments
 
 
 def scrapeComplex(driver, dateForDay):
-    time.sleep(2)
     soupPayments = []
-    calendarDate = str(dateForDay.strftime("%-m/%-d/%y"))
-    nextCalendarDate = str((dateForDay + dt.timedelta(1)).strftime("%-m/%-d/%y"))
+    time.sleep(2)
+    calendarDate = str(dateForDay.strftime("%-m/%-d/%Y"))
+    nextCalendarDate = str((dateForDay + dt.timedelta(1)).strftime("%-m/%-d/%Y"))
     print(calendarDate)
-
     soupPayments = soupPayments + getOrdersFromDate(driver, calendarDate, lambda x: x > 10)
     soupPayments = soupPayments + getOrdersFromDate(driver, nextCalendarDate, lambda x: x < 3)
     non_decimal = re.compile(r"[^\d]+")
@@ -53,16 +50,7 @@ def scrapeComplex(driver, dateForDay):
         lambda v, x: v
         + int(
             non_decimal.sub(
-                "",
-                x.find("span", string="Net total")
-                .findParent()
-                .find(
-                    "span",
-                    {
-                        "class": "gfr-grid__col gfr-grid__col--3 transactions-order-details-financials-summary__amount"
-                    },
-                )
-                .text,
+                "", x.find("span", string=" Total Payout:").findParent().findAll("span")[-1].text
             )
         ),
         0,
@@ -72,17 +60,15 @@ def scrapeComplex(driver, dateForDay):
 
 
 def myScraper(dateForDay):
-    # dateForDay = date.today() - dt.timedelta(days=1)
     options = webdriver.ChromeOptions()
     # Path to your chrome profile
     options.add_argument(
         "user-data-dir=/Users/kwhite/Library/Application Support/Google/Chrome/Default"
     )
-    options.add_extension("/usr/local/lib/chromium-browser/extensions/extension_1_29_2_0.crx")
     driver = webdriver.Chrome("/usr/local/lib/chromium-browser/chromedriver", options=options)
-    driver.get("https://restaurant.grubhub.com/financials/transactions/")
+    driver.get("")
     driver.implicitly_wait(10)
-    time.sleep(1)
+    # time.sleep(1000)
     try:
         a = scrapeComplex(driver, dateForDay)
     except Exception as inst:
@@ -92,4 +78,4 @@ def myScraper(dateForDay):
     return a
 
 
-# myScraper(dt.date.today()- dt.timedelta(2))
+# myScraper(date.today() - dt.timedelta(days=1))
