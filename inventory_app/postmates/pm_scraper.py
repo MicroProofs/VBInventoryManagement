@@ -78,9 +78,7 @@ def myScraper(dateForDay):
     # #     "/usr/local/lib/chromium-browser/extensions/extension_1_29_2_0.crx")
 
     profile = webdriver.FirefoxProfile()
-    driver = webdriver.Firefox(
-        firefox_profile=profile, executable_path="/usr/local/lib/firefox-browser/geckodriver"
-    )
+    driver = webdriver.Firefox(firefox_profile=profile, executable_path="/usr/local/lib/firefox-browser/geckodriver")
     driver.get("https://partner.postmates.com/dashboard/home/deliveries")
     driver.implicitly_wait(10)
     driver.maximize_window()
@@ -91,6 +89,7 @@ def myScraper(dateForDay):
     except Exception as inst:
         raise inst
     finally:
+        if driver:
         driver.quit()
     return a
 

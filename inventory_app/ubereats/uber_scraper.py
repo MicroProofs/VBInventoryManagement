@@ -20,9 +20,7 @@ def getOrdersFromPagination(driver):
     soupPayments = []
     content = driver.page_source
     soupPayments = soupPayments + [BeautifulSoup(content, features="lxml")]
-    while driver.find_elements_by_css_selector(
-        "li:last-child > .pagination__button:not(.pagination__button--disabled)"
-    ):
+    while driver.find_elements_by_css_selector("li:last-child > .pagination__button:not(.pagination__button--disabled)"):
         driver.find_elements_by_class_name("pagination__button")[-1].click()
         time.sleep(2)
         content = driver.page_source
@@ -30,7 +28,7 @@ def getOrdersFromPagination(driver):
     return soupPayments
 
 
-def getNetPayout(soupPayments, calendarDayOfWeek, calendarMonthAbrev, calendarDate):
+def getNetPayout(soupPayments, calendarDayOfWeek, calendarMonthAbrev, dateForDay):
     total = 0
     non_decimal = re.compile(r"[^\d]+")
     for i in soupPayments:
@@ -38,9 +36,7 @@ def getNetPayout(soupPayments, calendarDayOfWeek, calendarMonthAbrev, calendarDa
             orderInfo = j.find_all("td")
 
             orderDate = parse(orderInfo[0].text)
-            if (orderDate.day == calendarDate and orderDate.hour > 10) or (
-                orderDate.day == calendarDate + 1 and orderDate.hour < 3
-            ):
+            if (orderDate.day == dateForDay.day and orderDate.hour > 10) or (orderDate.day == (dateForDay + dt.timedelta(days=1)).day and orderDate.hour < 3):
                 print(orderInfo[0].text)
                 orderPayment = orderInfo[-1]
                 print(orderPayment.text)
@@ -54,15 +50,12 @@ def getNetPayout(soupPayments, calendarDayOfWeek, calendarMonthAbrev, calendarDa
 def getToOrdersByDate(driver, calendarDate, calendarMonth):
     calendarInputElem = driver.find_element_by_css_selector("input[placeholder='ll - ll']")
     calendarInputElem.click()
-    time.sleep(4)
-    calendarButtonElems = driver.find_elements_by_xpath(
-        '//div[text()="' + str(int(calendarDate)) + '"]'
-    )
+    time.sleep(6)
+    calendarButtonElems = driver.find_elements_by_xpath('//div[text()="' + str(int(calendarDate)) + '"]')
     print(calendarButtonElems)
     calendarButtonElem = (
         calendarButtonElems[-1]
-        if int(calendarDate) > 23
-        and driver.find_elements_by_xpath("//h3[text()='" + calendarMonth + " 2020']")
+        if int(calendarDate) > 23 and driver.find_elements_by_xpath("//h3[text()='" + calendarMonth + " 2020']")
         else calendarButtonElems[0]
     )
     calendarButtonElem.click()
@@ -83,15 +76,22 @@ def scrapeComplex(driver, dateForDay):
         " day of week: ",
         calendarDayOfWeekAbrev,
     )
-    getToOrdersByDate(driver, int(calendarDate), calendarMonth)
+    getToOrdersByDate(driver, calendarDate, calendarMonth)
     soupPayments = getOrdersFromPagination(driver)
     if calendarDayOfWeekAbrev == "Sun":
-        getToOrdersByDate(driver, int(calendarDate) + 1, calendarMonth)
+        nextCalendarDate = (dateForDay + dt.timedelta(days=1)).strftime("%d")
+        print(
+            "Today's date:",
+            nextCalendarDate,
+            " month: ",
+            calendarMonthAbrev,
+            " day of week: ",
+            calendarDayOfWeekAbrev,
+        )
+        getToOrdersByDate(driver, nextCalendarDate, calendarMonth)
         soupPayments += getOrdersFromPagination(driver)
 
-    netPayout = getNetPayout(
-        soupPayments, calendarDayOfWeekAbrev, calendarMonthAbrev, int(calendarDate)
-    )
+    netPayout = getNetPayout(soupPayments, calendarDayOfWeekAbrev, calendarMonthAbrev, dateForDay)
 
     print(netPayout / 100)
     return netPayout
@@ -101,9 +101,7 @@ def myScraper(dateForDay):
     # dateForDay = date.today() - dt.timedelta(days=1)
     options = webdriver.ChromeOptions()
     # Path to your chrome profile
-    options.add_argument(
-        "user-data-dir=/Users/kwhite/Library/Application Support/Google/Chrome/Default"
-    )
+    options.add_argument("user-data-dir=/Users/kwhite/Library/Application Support/Google/Chrome/Default")
     driver = webdriver.Chrome("/usr/local/lib/chromium-browser/chromedriver", options=options)
     driver.get()
     driver.implicitly_wait(10)
@@ -113,6 +111,7 @@ def myScraper(dateForDay):
     except Exception as inst:
         raise inst
     finally:
+        if driver:
         driver.quit()
     return a
 

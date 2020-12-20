@@ -64,8 +64,7 @@ def scrapeComplex(driver, dateForDay):
         hoursList = soupPayments.select("." + i.lower() + " .data")
         for j in hoursList:
             if (not j.find("div", {"class": "label-role"})) or (
-                not "Trainee" in j.find("div", {"class": "label-role"}).text
-                and not "Advert" in j.find("div", {"class": "label-role"}).text
+                not "Trainee" in j.find("div", {"class": "label-role"}).text and not "Advert" in j.find("div", {"class": "label-role"}).text
             ):
                 timeList = j.find("div", {"class": "time"}).text.strip().split(" - ")
                 noDuplicatesTimeList = [lm for lm in timeList if not lm in hoursDict[i]]
@@ -96,14 +95,12 @@ def scrapeComplex(driver, dateForDay):
 
 def myScraper():
     profile = webdriver.FirefoxProfile()
-    driver = webdriver.Firefox(
-        firefox_profile=profile, executable_path="/usr/local/lib/firefox-browser/geckodriver"
-    )
+    driver = webdriver.Firefox(firefox_profile=profile, executable_path="/usr/local/lib/firefox-browser/geckodriver")
     driver.get("https://app.joinhomebase.com/schedule_builder")
     driver.implicitly_wait(10)
     time.sleep(1)
     try:
-        a = scrapeComplex(driver, date.today() - dt.timedelta(days=7))
+        a = scrapeComplex(driver, date.today() - dt.timedelta(days=8))
     except Exception as inst:
         raise inst
     finally:

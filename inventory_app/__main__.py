@@ -12,7 +12,7 @@ from postmates import pm_scraper
 
 def main():
     try:
-        dateForDay = dt.date.today() - dt.timedelta(days=1)
+        dateForDay = dt.date.today() - dt.timedelta(days=2)
         ue_totals = ue_scraper.myScraper(dateForDay)
         dd_totals = dd_scraper.myScraper(dateForDay)
         pm_totals = pm_scraper.myScraper(dateForDay)
@@ -23,10 +23,7 @@ def main():
         pm = pm_totals / 100
         fn_t = (dd_totals + pm_totals + ue_totals + gh_totals) / 100
         output_date = dateForDay.strftime("%Y/%m/%d")
-        final = (
-            f"Date: {output_date}\nNet Payouts:\n -Uber Eats: ${ue}\n -Postmates: ${pm}\n"
-            f" -Doordash: ${dd}\n -GrubHub: ${gh}\n\nFinal Total: ${fn_t}"
-        )
+        final = f"Date: {output_date}\nNet Payouts:\n -Uber Eats: ${ue}\n -Postmates: ${pm}\n -Doordash: ${dd}\n -GrubHub: ${gh}\n\nFinal Total: ${fn_t}"
         print(final)
         ts.send_message(final, "+1")
         f = open("delivery_numbers.txt", "a")

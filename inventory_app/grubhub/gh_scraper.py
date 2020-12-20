@@ -23,19 +23,16 @@ def getOrdersFromDate(driver, theDate, func):
     for i in calendarButtonElems:
         i.click()
         time.sleep(2)
-        hourOfOrder = parse(
-            driver.find_element_by_class_name(
-                "transactions-order-details-header__info-bar__received-time"
-            ).text.split(" ")[-1]
-        ).hour
+        try:
+            hourOfOrder = parse(driver.find_element_by_class_name("transactions-order-details-header__info-bar__received-time").text.split(" ")[-1]).hour
         print(hourOfOrder)
         if func(hourOfOrder):
             content = driver.page_source
             soupPayments = soupPayments + [BeautifulSoup(content, features="lxml")]
-        driver.find_element_by_class_name(
-            "transactions-order-details-header__info-bar__close__icon"
-        ).click()
+            driver.find_element_by_class_name("transactions-order-details-header__info-bar__close__icon").click()
         time.sleep(2)
+        except Exception as e2:
+            print(e2)
     return soupPayments
 
 
@@ -58,9 +55,7 @@ def scrapeComplex(driver, dateForDay):
                 .findParent()
                 .find(
                     "span",
-                    {
-                        "class": "gfr-grid__col gfr-grid__col--3 transactions-order-details-financials-summary__amount"
-                    },
+                    {"class": "gfr-grid__col gfr-grid__col--3 transactions-order-details-financials-summary__amount"},
                 )
                 .text,
             )
@@ -75,9 +70,7 @@ def myScraper(dateForDay):
     # dateForDay = date.today() - dt.timedelta(days=1)
     options = webdriver.ChromeOptions()
     # Path to your chrome profile
-    options.add_argument(
-        "user-data-dir=/Users/kwhite/Library/Application Support/Google/Chrome/Default"
-    )
+    options.add_argument("user-data-dir=/Users/kwhite/Library/Application Support/Google/Chrome/Default")
     options.add_extension("/usr/local/lib/chromium-browser/extensions/extension_1_29_2_0.crx")
     driver = webdriver.Chrome("/usr/local/lib/chromium-browser/chromedriver", options=options)
     driver.get("https://restaurant.grubhub.com/financials/transactions/")
@@ -88,6 +81,7 @@ def myScraper(dateForDay):
     except Exception as inst:
         raise inst
     finally:
+        if driver:
         driver.quit()
     return a
 

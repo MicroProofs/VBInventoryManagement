@@ -1,4 +1,4 @@
-__author__ = 'kwhite'
+__author__ = "kwhite"
 
 import calendar
 import datetime as dt
@@ -18,16 +18,22 @@ from selenium.webdriver.common.keys import Keys
 
 def getEachItem(driver, ele, month):
     pageArray = []
-    if(parse(ele.find_elements_by_css_selector('td')[0].text).month == month and not "ERROR" in ele.find_elements_by_css_selector('td')[2].text and not "Appeasement" in ele.find_elements_by_css_selector('td')[1].text):
+    if (
+        parse(ele.find_elements_by_css_selector("td")[0].text).month == month
+        and not "ERROR" in ele.find_elements_by_css_selector("td")[2].text
+        and not "Appeasement" in ele.find_elements_by_css_selector("td")[1].text
+    ):
         ele.click()
         time.sleep(1.3)
-        for order_item in driver.find_elements_by_css_selector('.order-detail .order-detail-section')[1].find_elements_by_css_selector('tr._style_2T0IvR'):
-            if(order_item.text):
+        for order_item in driver.find_elements_by_css_selector(
+            ".order-detail .order-detail-section"
+        )[1].find_elements_by_css_selector("tr._style_2T0IvR"):
+            if order_item.text:
                 # print(order_item.text)
-                pageArray += [[order_item.find_elements_by_css_selector('td')
-                               [0].text, order_item.text]]
-        driver.find_element_by_css_selector(
-            '.order-detail svg._style_1OXPmY').click()
+                pageArray += [
+                    [order_item.find_elements_by_css_selector("td")[0].text, order_item.text]
+                ]
+        driver.find_element_by_css_selector(".order-detail svg._style_1OXPmY").click()
         time.sleep(1.3)
     return pageArray
 

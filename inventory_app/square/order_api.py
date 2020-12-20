@@ -1,6 +1,8 @@
-from square.client import Client
-from functional import seq
 import json
+
+from functional import seq
+from square.client import Client
+
  
 def get_orders(): 
     client = Client(

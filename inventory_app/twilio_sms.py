@@ -8,11 +8,6 @@ def send_message(text, number):
 
     client = Client(account_sid, auth_token)
 
-    message = client.messages \
-                    .create(
-                        body=text,
-                        from_='+1',
-                        to=number
-                    )
+    message = client.messages.create(body=text, from_="+12029534376", to=number)
 
     print(message.sid)
