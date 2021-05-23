@@ -19,7 +19,7 @@ from selenium.webdriver.common.keys import Keys
 
 
 def getOrdersFromDate(driver, theDate, func):
-    # time.sleep(5)
+    time.sleep(10)
     calendarButtonElems = driver.find_elements_by_xpath('//div[text()="' + theDate + '"]')
     print(calendarButtonElems)
     soupPayments = []
@@ -32,7 +32,7 @@ def getOrdersFromDate(driver, theDate, func):
             content = driver.page_source
             soupPayments = soupPayments + [BeautifulSoup(content, features="lxml")]
             driver.find_element_by_class_name("close-button").find_element_by_tag_name("a").click()
-            time.sleep(1)
+            time.sleep(3)
     return soupPayments
 
 
@@ -72,14 +72,14 @@ def myScraper(dateForDay):
     # options = webdriver.ChromeOptions()
 
     # Path to your chrome profile
-    # options.add_argument(
-    #     "user-data-dir=/Users/kwhite/Library/Application Support/Google/Chrome/Default")
-    # # options.add_extension(
-    # #     "/usr/local/lib/chromium-browser/extensions/extension_1_29_2_0.crx")
+    # options.add_argument("user-data-dir=/Users/kwhite/Library/Application Support/Google/Chrome/Default")
+    # options.add_extension(
+    #     "/usr/local/lib/chromium-browser/extensions/extension_1_29_2_0.crx")
 
     profile = webdriver.FirefoxProfile()
     driver = webdriver.Firefox(firefox_profile=profile, executable_path="/usr/local/lib/firefox-browser/geckodriver")
-    driver.get("https://partner.postmates.com/dashboard/home/deliveries")
+    # driver = webdriver.Chrome(options=options, executable_path="/usr/local/lib/chromium-browser/chromedriver")
+    driver.get("https://partner.postmates.com/")
     driver.implicitly_wait(10)
     driver.maximize_window()
     driver.refresh()

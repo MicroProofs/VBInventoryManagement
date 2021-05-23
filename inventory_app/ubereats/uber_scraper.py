@@ -20,9 +20,9 @@ def getOrdersFromPagination(driver):
     soupPayments = []
     content = driver.page_source
     soupPayments = soupPayments + [BeautifulSoup(content, features="lxml")]
-    while driver.find_elements_by_css_selector("li:last-child > .pagination__button:not(.pagination__button--disabled)"):
-        driver.find_elements_by_class_name("pagination__button")[-1].click()
-        time.sleep(2)
+    while driver.find_elements_by_css_selector("button[aria-label^='next page.']:not(button[disabled=''])"):
+        driver.find_element_by_css_selector("button[aria-label^='next page.']").click()
+        time.sleep(3)
         content = driver.page_source
         soupPayments = soupPayments + [BeautifulSoup(content, features="lxml")]
     return soupPayments
@@ -32,8 +32,8 @@ def getNetPayout(soupPayments, calendarDayOfWeek, calendarMonthAbrev, dateForDay
     total = 0
     non_decimal = re.compile(r"[^\d]+")
     for i in soupPayments:
-        for j in i.select("tbody tr._style_2T0IvR"):
-            orderInfo = j.find_all("td")
+        for j in i.select("div[role='rowgroup'] div[aria-label='order row']"):
+            orderInfo = j.select("div[role='gridcell']")
 
             orderDate = parse(orderInfo[0].text)
             if (orderDate.day == dateForDay.day and orderDate.hour > 10) or (orderDate.day == (dateForDay + dt.timedelta(days=1)).day and orderDate.hour < 3):
@@ -47,21 +47,30 @@ def getNetPayout(soupPayments, calendarDayOfWeek, calendarMonthAbrev, dateForDay
     return total
 
 
-def getToOrdersByDate(driver, calendarDate, calendarMonth):
-    calendarInputElem = driver.find_element_by_css_selector("input[placeholder='ll - ll']")
+def getToOrdersByDate(driver, calendarDate, calendarMonth, forward=False):
+    time.sleep(2)
+    calendarInputElem = driver.find_element_by_css_selector("input[aria-label='datepicker-input']")
     calendarInputElem.click()
-    time.sleep(6)
+    time.sleep(3)
+    if forward:
+        while not calendarMonth in driver.find_element_by_css_selector("button[aria-live='polite']").text:
+            driver.find_element_by_css_selector("button[aria-label='Next month.']").click()
+            time.sleep(1)
+    else:
+        while not calendarMonth in driver.find_element_by_css_selector("button[aria-live='polite']").text:
+            driver.find_element_by_css_selector("button[aria-label='Previous month.']").click()
+            time.sleep(1)
     calendarButtonElems = driver.find_elements_by_xpath('//div[text()="' + str(int(calendarDate)) + '"]')
     print(calendarButtonElems)
-    calendarButtonElem = (
-        calendarButtonElems[-1]
-        if int(calendarDate) > 23 and driver.find_elements_by_xpath("//h3[text()='" + calendarMonth + " 2020']")
-        else calendarButtonElems[0]
-    )
+    calendarButtonElem = calendarButtonElems[0]
+    calendarButtonElem
     calendarButtonElem.click()
     time.sleep(4)
 
 
+# calendarButtonElems[-1]
+#         if int(calendarDate) > 23 and driver.find_elements_by_xpath("//h3[text()='" + calendarMonth + " 2021']")
+#         else
 def scrapeComplex(driver, dateForDay):
     time.sleep(2)
     calendarDate = dateForDay.strftime("%d")
@@ -76,10 +85,13 @@ def scrapeComplex(driver, dateForDay):
         " day of week: ",
         calendarDayOfWeekAbrev,
     )
-    getToOrdersByDate(driver, calendarDate, calendarMonth)
+    # getToOrdersByDate(driver, calendarDate, calendarMonth, True)
+    time.sleep(3)
     soupPayments = getOrdersFromPagination(driver)
+    driver.execute_script("scrollBy(0,-800);")
     if calendarDayOfWeekAbrev == "Sun":
         nextCalendarDate = (dateForDay + dt.timedelta(days=1)).strftime("%d")
+        nextCalendarMonth = (dateForDay + dt.timedelta(days=1)).strftime("%B")
         print(
             "Today's date:",
             nextCalendarDate,
@@ -88,7 +100,7 @@ def scrapeComplex(driver, dateForDay):
             " day of week: ",
             calendarDayOfWeekAbrev,
         )
-        getToOrdersByDate(driver, nextCalendarDate, calendarMonth)
+        getToOrdersByDate(driver, nextCalendarDate, nextCalendarMonth, True)
         soupPayments += getOrdersFromPagination(driver)
 
     netPayout = getNetPayout(soupPayments, calendarDayOfWeekAbrev, calendarMonthAbrev, dateForDay)

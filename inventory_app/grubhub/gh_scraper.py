@@ -37,7 +37,7 @@ def getOrdersFromDate(driver, theDate, func):
 
 
 def scrapeComplex(driver, dateForDay):
-    time.sleep(2)
+    time.sleep(10)
     soupPayments = []
     calendarDate = str(dateForDay.strftime("%-m/%-d/%y"))
     nextCalendarDate = str((dateForDay + dt.timedelta(1)).strftime("%-m/%-d/%y"))

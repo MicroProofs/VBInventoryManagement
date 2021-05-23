@@ -8,6 +8,13 @@ from bs4 import BeautifulSoup
 from dateutil.parser import parse
 from functional import seq
 from selenium import webdriver
+import random
+
+
+def sendKeysOneAtATime(element, phrase):
+    for i in phrase:
+        element.send_keys(i)
+        time.sleep(random.randint(1, 3) / 10)
 
 
 def get_orders_from_date(driver, the_date, func):
@@ -21,15 +28,15 @@ def get_orders_from_date(driver, the_date, func):
     Returns:
         [BeautifulSoup]: [description]
     """
-    # time.sleep(10)
+    time.sleep(4)
     calendar_button_elems = driver.find_elements_by_xpath('//td[text()="' + the_date + '"]')
     print(calendar_button_elems)
     soup_payments = []
     for i in range(0, len(calendar_button_elems)):
         item = driver.find_elements_by_xpath('//td[text()="' + the_date + '"]/..//a')[i]
         item.click()
-        time.sleep(2)
-        hour_of_order = parse(driver.find_elements_by_xpath('//span[text()="Pickup time"]/../span')[-1].text).hour
+        time.sleep(3)
+        hour_of_order = parse(driver.find_elements_by_xpath('//span[text()="Pickup Time"]/..//span')[-1].text).hour
         print(hour_of_order)
         if func(hour_of_order):
             content = driver.page_source
@@ -52,7 +59,22 @@ def scrape_complex(driver, date_for_day):
     time.sleep(2)
     calendar_date = str(date_for_day.strftime("%-m/%-d/%Y"))
     next_calendar_date = str((date_for_day + dt.timedelta(1)).strftime("%-m/%-d/%Y"))
+    prev_padded_date = str((date_for_day - dt.timedelta(1)).strftime("%m/%d/%Y"))
+    next_padded_date = str((date_for_day + dt.timedelta(1)).strftime("%m/%d/%Y"))
     print(calendar_date)
+    time.sleep(6)
+    # driver.find_element_by_css_selector("button[aria-label='Close']").click()
+    calendar_input_start = driver.find_elements_by_class_name("form-control")[0]
+    calendar_input_end = driver.find_elements_by_class_name("form-control")[-1]
+    calendar_input_start.click()
+    calendar_input_start.clear()
+    sendKeysOneAtATime(calendar_input_start, prev_padded_date)
+    calendar_input_start.click()
+    calendar_input_end.click()
+    calendar_input_end.clear()
+    sendKeysOneAtATime(calendar_input_end, next_padded_date)
+    calendar_input_end.click()
+    driver.find_element_by_css_selector('button[kind="BUTTON/PRIMARY"').click()
     soup_payments = soup_payments + get_orders_from_date(driver, calendar_date, lambda x: x > 10)
     soup_payments = soup_payments + get_orders_from_date(driver, next_calendar_date, lambda x: x < 3)
     non_decimal = re.compile(r"[^\d]+")
@@ -75,8 +97,7 @@ def myScraper(date_for_day):
     # Path to your chrome profile
     options.add_argument("user-data-dir=/Users/kwhite/Library/Application Support/Google/Chrome/Default")
     driver = webdriver.Chrome("/usr/local/lib/chromium-browser/chromedriver", options=options)
-    driver.get("")
-    driver.implicitly_wait(10)
+    driver.implicitly_wait(20)
     # time.sleep(1000)
     try:
         mine = scrape_complex(driver, date_for_day)

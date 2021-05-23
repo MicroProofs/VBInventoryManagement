@@ -53,7 +53,7 @@ def get_orders(start_time, end_time):
                 },
                 "sort": {"sort_field": "CLOSED_AT", "sort_order": "ASC"},
             },
-            "limit": 100,
+            "limit": 1000,
             "return_entries": False,
         }
     )
